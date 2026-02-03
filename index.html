@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter the Castle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="background-overlay"></div>
+
+    <main class="auth-container">
+        <div class="castle-gate-decoration">
+            <!-- Decorative elements using the uploaded assets (placeholders for now) -->
+            <img src="assets/element_0.png" alt="Castle Sigil" class="sigil">
+        </div>
+
+        <div class="form-wrapper" id="login-form">
+            <h1>Gate Access</h1>
+            <p class="subtitle">Enter your credentials to lower the bridge.</p>
+
+            <form onsubmit="event.preventDefault()">
+                <div class="input-group">
+                    <input type="email" id="login-email" required placeholder=" ">
+                    <label for="login-email">Email Scroll</label>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="login-password" required placeholder=" ">
+                    <label for="login-password">Secret Phrase</label>
+                </div>
+
+                <button type="submit" class="cta-button">
+                    <span class="btn-text">Enter</span>
+                    <div class="btn-shine"></div>
+                </button>
+            </form>
+
+            <div class="switch-auth">
+                <p>New to the realm? <button onclick="toggleAuth()" class="text-btn">Request Citizenship</button></p>
+            </div>
+        </div>
+
+        <div class="form-wrapper hidden" id="signup-form">
+            <h1>Join the Realm</h1>
+            <p class="subtitle">Carve your name into the stone.</p>
+
+            <form onsubmit="event.preventDefault()">
+                <div class="input-group">
+                    <input type="text" id="signup-name" required placeholder=" ">
+                    <label for="signup-name">Knight Name</label>
+                </div>
+                <div class="input-group">
+                    <input type="email" id="signup-email" required placeholder=" ">
+                    <label for="signup-email">Email Scroll</label>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="signup-password" required placeholder=" ">
+                    <label for="signup-password">Secret Phrase</label>
+                </div>
+
+                <button type="submit" class="cta-button">
+                    <span class="btn-text">Forge Account</span>
+                    <div class="btn-shine"></div>
+                </button>
+            </form>
+
+            <div class="switch-auth">
+                <p>Already sworn in? <button onclick="toggleAuth()" class="text-btn">Return to Gate</button></p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Game Interface -->
+    <div id="game-interface" class="hidden">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+
+</html>
