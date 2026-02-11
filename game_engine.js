@@ -37,6 +37,20 @@ export class Game {
         this.canvas.addEventListener('mousedown', () => this.handleInput());
         this.canvas.addEventListener('touchstart', (e) => { e.preventDefault(); this.handleInput(); });
 
+        // Handle Tab Switching
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.wasRunningBeforeHide = this.isRunning;
+                this.isRunning = false;
+            } else {
+                if (this.wasRunningBeforeHide && !this.isGameOver) {
+                    this.isRunning = true;
+                    this.lastTime = performance.now();
+                    requestAnimationFrame((t) => this.loop(t));
+                }
+            }
+        });
+
         this.reset();
     }
 
@@ -56,10 +70,8 @@ export class Game {
         this.ICE_PHASE_DIST = 2500;
         this.speedTimer = 0;
 
-        this.phaser = 'NORMAL';
+        this.phase = 'NORMAL'; // Fix typo 'phaser' -> 'phase' if it existed, or just keep it consistent
 
-        this.hasShield = false;
-        this.timeSlowActive = false;
         this.hasShield = false;
         this.timeSlowActive = false;
         this.timeSlowTimer = 0;
@@ -67,7 +79,6 @@ export class Game {
         this.highScoreBeaten = false;
 
         // Debug
-        this.timeSlowTimer = 0;
         this.speedTimer = 0;
 
         this.ninja = new Ninja(this);
@@ -93,8 +104,11 @@ export class Game {
 
     loop(timestamp) {
         if (!this.isRunning) return;
-        const dt = (timestamp - this.lastTime) / 1000;
+        let dt = (timestamp - this.lastTime) / 1000;
         this.lastTime = timestamp;
+
+        // Cap dt to prevent huge jumps (e.g. when returning from background)
+        if (dt > 0.1) dt = 0.1;
 
         this.update(dt);
         this.draw();
