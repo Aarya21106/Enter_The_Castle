@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background: #000;
+        }
+
+        #game-interface {
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game-interface">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <script type="module">
+        import { Game } from './game_engine.js?v=2.8';
+        try {
+            console.log('Initializing game...');
+            // Mock user ID 'test-user', initial score 0
+            const game = new Game('gameCanvas', 'test-user', 0, (score) => {
+                console.log('New high score:', score);
+                alert('Game Over! Score: ' + score);
+            });
+            game.start();
+            console.log('Game started successfully');
+        } catch (e) {
+            alert('Game Start Error: ' + e.message + '\n' + e.stack);
+            console.error(e);
+        }
+
+        window.onerror = function (msg, url, line, col, error) {
+            alert('Global Error: ' + msg + '\n' + JSON.stringify(error));
+        };
+    </script>
+</body>
+
+</html>

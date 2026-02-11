@@ -10,78 +10,180 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="assets/element_0.png">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker Registered'))
+                    .catch(err => console.log('Service Worker Failed', err));
+            });
+        }
+    </script>
+    <script>
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            alert('Error: ' + msg + '\nURL: ' + url + '\nLine: ' + lineNo + '\nColumn: ' + columnNo + '\nError object: ' + JSON.stringify(error));
+            return false;
+        };
+        window.onunhandledrejection = function (event) {
+            alert('Unhandled rejection: ' + event.reason);
+        };
+    </script>
 </head>
 
 <body>
     <div class="background-overlay"></div>
 
-    <main class="auth-container">
+    <!-- 1. Auth Container -->
+    <main class="auth-container" id="auth-screen">
         <div class="castle-gate-decoration">
-            <!-- Decorative elements using the uploaded assets (placeholders for now) -->
             <img src="assets/element_0.png" alt="Castle Sigil" class="sigil">
         </div>
 
-        <div class="form-wrapper" id="login-form">
-            <h1>Gate Access</h1>
-            <p class="subtitle">Enter your credentials to lower the bridge.</p>
+        <div class="form-wrapper">
+            <h1>ENTER THE CASTLE</h1>
+            <p class="subtitle">Only skill rises.</p>
 
-            <form onsubmit="event.preventDefault()">
-                <div class="input-group">
-                    <input type="email" id="login-email" required placeholder=" ">
-                    <label for="login-email">Email Scroll</label>
-                </div>
-                <div class="input-group">
-                    <input type="password" id="login-password" required placeholder=" ">
-                    <label for="login-password">Secret Phrase</label>
-                </div>
-
-                <button type="submit" class="cta-button">
-                    <span class="btn-text">Enter</span>
+            <div class="auth-options">
+                <button id="google-login-btn" class="cta-button google-btn">
+                    <span class="icon">G</span>
+                    <span class="btn-text">Sign in with Google</span>
                     <div class="btn-shine"></div>
                 </button>
-            </form>
 
-            <div class="switch-auth">
-                <p>New to the realm? <button onclick="toggleAuth()" class="text-btn">Request Citizenship</button></p>
-            </div>
-        </div>
+                <div class="divider"><span>OR</span></div>
 
-        <div class="form-wrapper hidden" id="signup-form">
-            <h1>Join the Realm</h1>
-            <p class="subtitle">Carve your name into the stone.</p>
+                <form id="email-login-form" onsubmit="event.preventDefault()">
+                    <div class="input-group">
+                        <input type="email" id="email-input" required placeholder=" ">
+                        <label for="email-input">Email Scroll</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="password-input" required placeholder=" ">
+                        <label for="password-input">Secret Phrase</label>
+                    </div>
+                    <button type="submit" class="cta-button secondary">
+                        <span class="btn-text">Enter via Email</span>
+                    </button>
+                </form>
 
-            <form onsubmit="event.preventDefault()">
-                <div class="input-group">
-                    <input type="text" id="signup-name" required placeholder=" ">
-                    <label for="signup-name">Knight Name</label>
+                <div class="switch-auth">
+                    <button id="toggle-auth-mode-btn" class="text-btn">Forging a new path? Sign Up</button>
                 </div>
-                <div class="input-group">
-                    <input type="email" id="signup-email" required placeholder=" ">
-                    <label for="signup-email">Email Scroll</label>
-                </div>
-                <div class="input-group">
-                    <input type="password" id="signup-password" required placeholder=" ">
-                    <label for="signup-password">Secret Phrase</label>
-                </div>
-
-                <button type="submit" class="cta-button">
-                    <span class="btn-text">Forge Account</span>
-                    <div class="btn-shine"></div>
-                </button>
-            </form>
-
-            <div class="switch-auth">
-                <p>Already sworn in? <button onclick="toggleAuth()" class="text-btn">Return to Gate</button></p>
             </div>
         </div>
     </main>
 
-    <!-- Game Interface -->
-    <div id="game-interface" class="hidden">
-        <canvas id="gameCanvas"></canvas>
+    <!-- 2. Username Setup Modal -->
+    <div id="username-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Identify Yourself</h2>
+            <p>Carve your name into the stone.</p>
+            <form id="username-form">
+                <div class="input-group">
+                    <input type="text" id="new-username" required placeholder=" " maxlength="15"
+                        pattern="[a-zA-Z0-9_]+">
+                    <label for="new-username">Unique Username</label>
+                </div>
+                <p id="username-error" class="error-msg"></p>
+                <button type="submit" class="cta-button">
+                    <span class="btn-text">Confirm Identity</span>
+                </button>
+            </form>
+        </div>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <!-- 3. Entry Screen (Tap to Start) -->
+    <div id="entry-screen" class="screen hidden">
+        <div class="leaderboard-preview" id="leaderboard-preview">
+            <h3>Top Knights</h3>
+            <ul id="top-knights-list">
+                <li>Loading...</li>
+            </ul>
+        </div>
+
+        <div class="tap-zone" id="start-game-zone">
+            <h1>TAP TO START</h1>
+            <p>Survive the trial.</p>
+        </div>
+
+        <button id="open-leaderboard-btn" class="icon-btn top-right">
+            🏆
+        </button>
+
+        <button id="logout-btn" class="icon-btn top-left">
+            ⬅️
+        </button>
+    </div>
+
+    <!-- 4. Game Interface -->
+    <div id="game-interface" class="hidden">
+        <canvas id="gameCanvas"></canvas>
+        <div id="new-high-score-overlay" class="hidden">NEW HIGH SCORE</div>
+    </div>
+
+    <!-- 5. Post-Game Result Screen for Mobile -->
+    <div id="post-game-screen" class="modal hidden">
+        <div class="modal-content result-card">
+            <h2 id="result-title">DOOMED</h2>
+
+            <div class="stat-row">
+                <span class="label">Distance</span>
+                <span class="value" id="result-distance">0m</span>
+            </div>
+            <div class="stat-row">
+                <span class="label">Best</span>
+                <span class="value" id="result-best">0m</span>
+            </div>
+            <div class="stat-row">
+                <span class="label">Rank</span>
+                <span class="value" id="result-rank">-</span>
+            </div>
+
+            <div class="action-buttons">
+                <button id="home-btn" class="cta-button secondary" style="margin-top:0">
+                    <span class="btn-text">Home</span>
+                </button>
+                <button id="share-btn" class="cta-button share-btn">
+                    <span class="btn-text">Share</span>
+                </button>
+                <button id="restart-btn" class="cta-button">
+                    <span class="btn-text">Reincarnate</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Full Leaderboard Modal -->
+    <div id="leaderboard-modal" class="modal hidden">
+        <div class="modal-content wide">
+            <div class="modal-header">
+                <h2>Hall of Fame</h2>
+                <button class="close-btn"
+                    onclick="document.getElementById('leaderboard-modal').classList.add('hidden')">×</button>
+            </div>
+            <div class="leaderboard-scroll">
+                <table id="full-leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Knight</th>
+                            <th>Distance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js?v=3.0"></script>
 </body>
 
 </html>

@@ -1,8 +1,10 @@
 export class Game {
-    constructor(canvasId, userId) {
+    constructor(canvasId, userId, initialHighScore = 0, onGameEnd = null) {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
         this.userId = userId;
+        this.highScore = initialHighScore;
+        this.onGameEndCallback = onGameEnd;
 
         // Constants
         this.GAME_WIDTH = 400;
@@ -20,14 +22,16 @@ export class Game {
             shuriken: new Image(),
             enemy: new Image(),
             bg: new Image(),
+            bg2: new Image(),
             player: new Image()
         };
-        this.assets.shield.src = 'assets/element_1.png';
-        this.assets.timeOrb.src = 'assets/element_0.png';
-        this.assets.shuriken.src = 'assets/element_4.png';
-        this.assets.enemy.src = 'assets/element_3.png';
-        this.assets.bg.src = 'assets/background_game.png';
-        this.assets.player.src = 'assets/IMG_1226.PNG';
+        this.assets.shield.src = 'assets/element_1.png?v=2.9';
+        this.assets.timeOrb.src = 'assets/element_0.png?v=2.9';
+        this.assets.shuriken.src = 'assets/element_4old.png?v=4.0';
+        this.assets.enemy.src = 'assets/element_3.png?v=2.9';
+        this.assets.bg.src = 'assets/background_game.png?v=4.0';
+        this.assets.bg2.src = 'assets/background_ice.png?v=2.9';
+        this.assets.player.src = 'assets/IMG_1226.PNG?v=2.9';
 
         // Inputs
         this.canvas.addEventListener('mousedown', () => this.handleInput());
@@ -49,9 +53,22 @@ export class Game {
         this.score = 0;
         this.currentSpeed = this.BASE_SPEED;
 
+        this.ICE_PHASE_DIST = 2500;
+        this.speedTimer = 0;
+
+        this.phaser = 'NORMAL';
+
+        this.hasShield = false;
+        this.timeSlowActive = false;
         this.hasShield = false;
         this.timeSlowActive = false;
         this.timeSlowTimer = 0;
+
+        this.highScoreBeaten = false;
+
+        // Debug
+        this.timeSlowTimer = 0;
+        this.speedTimer = 0;
 
         this.ninja = new Ninja(this);
         this.world = new World(this);
@@ -87,7 +104,14 @@ export class Game {
 
     update(dt) {
         let effectiveDt = dt;
-        if (this.timeSlowActive) effectiveDt *= 0.5;
+        if (this.timeSlowActive) {
+            effectiveDt *= 0.5;
+            this.timeSlowTimer -= dt;
+            if (this.timeSlowTimer <= 0) {
+                this.timeSlowActive = false;
+                this.timeSlowTimer = 0;
+            }
+        }
 
         this.timeSurvived += effectiveDt;
         this.distanceTravelled += this.currentSpeed * effectiveDt * 10;
@@ -96,24 +120,55 @@ export class Game {
         this.ninja.update(effectiveDt);
         this.world.update(effectiveDt);
 
-        if (this.world.checkCollision(this.ninja)) {
-            // Collision Logic
-        }
+
     }
 
     updateDifficulty(dt) {
         const t = this.timeSurvived;
+        const d = this.distanceTravelled;
 
-        if (t <= 7) this.phase = 'TRIAL';
-        else if (t <= 15) this.phase = 'INTRO';
-        else if (t <= 25) this.phase = 'AXIS';
-        else if (t <= 30) this.phase = 'THREAT';
-        else if (t <= 50) this.phase = 'CORE';
-        else this.phase = 'INTENSE';
+        // Phase Logic
+        if (d > 5000) {
+            this.phase = 'ABYSS';
+            this.speedTimer += dt;
+            if (this.speedTimer >= 5.0) {
+                this.speedTimer = 0;
+                this.currentSpeed += 0.5;
+                if (this.currentSpeed > 20.0) this.currentSpeed = 20.0;
+            }
+        } else if (d > this.ICE_PHASE_DIST) {
+            this.phase = 'ICE_HELL';
 
-        if (t > 20) {
-            if (this.currentSpeed < this.MAX_SPEED) {
-                let r = t > 40 ? 0.06 : 0.04;
+            // Speed increase. More gradual now, similar to normal phase but continuous.
+            // 0.2 every 5s instead of 0.5.
+            this.speedTimer += dt;
+            if (this.speedTimer >= 5.0) {
+                this.speedTimer = 0;
+                this.currentSpeed += 0.2;
+                if (this.currentSpeed > 13.0) this.currentSpeed = 13.0; // cap
+            }
+        } else {
+            this.speedTimer = 0;
+            if (t <= 5) this.phase = 'TRIAL';
+            else if (t <= 10) this.phase = 'INTRO';
+            else if (t <= 20) this.phase = 'AXIS';
+            else if (t <= 35) this.phase = 'THREAT';
+            else if (t <= 45) this.phase = 'CORE';
+            else this.phase = 'INTENSE';
+
+            // High Score Check
+            if (!this.highScoreBeaten && this.highScore > 0 && this.distanceTravelled > this.highScore) {
+                this.highScoreBeaten = true;
+                const overlay = document.getElementById('new-high-score-overlay');
+                if (overlay) {
+                    overlay.classList.remove('hidden');
+                    setTimeout(() => overlay.classList.add('hidden'), 2000);
+                }
+            }
+
+            // Standard progression
+            if (t > 5 && this.currentSpeed < this.MAX_SPEED) {
+                let r = t > 30 ? 0.07 : 0.045;
                 this.currentSpeed += r * dt;
             }
         }
@@ -123,12 +178,14 @@ export class Game {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         // Draw Background
-        if (this.assets.bg.complete) {
-            this.ctx.drawImage(this.assets.bg, 0, 0, this.GAME_WIDTH, this.GAME_HEIGHT);
-            if (this.phase === 'INTENSE' || this.phase === 'DARK' || this.phase === 'HELL') {
-                this.ctx.fillStyle = 'rgba(50, 0, 0, 0.3)';
-                this.ctx.fillRect(0, 0, this.GAME_WIDTH, this.GAME_HEIGHT);
-            }
+        let currentBg = this.assets.bg;
+
+        if (this.distanceTravelled >= this.ICE_PHASE_DIST && this.assets.bg2.complete) {
+            currentBg = this.assets.bg2;
+        }
+
+        if (currentBg.complete) {
+            this.ctx.drawImage(currentBg, 0, 0, this.GAME_WIDTH, this.GAME_HEIGHT);
         } else {
             this.ctx.fillStyle = '#111';
             this.ctx.fillRect(0, 0, this.GAME_WIDTH, this.GAME_HEIGHT);
@@ -140,30 +197,31 @@ export class Game {
         // UI
         this.ctx.fillStyle = '#fff';
         this.ctx.font = 'bold 20px Inter';
-        this.ctx.fillText(`Dist: ${Math.floor(this.distanceTravelled)}m`, 20, 40);
+        this.ctx.fillText(`Dist: ${Math.floor(this.distanceTravelled)}m`, 20, 60);
 
-        if (this.hasShield) this.ctx.drawImage(this.assets.shield, 20, 60, 40, 40);
+        if (this.hasShield) this.ctx.drawImage(this.assets.shield, 20, 80, 40, 40);
 
         if (this.isGameOver) this.drawGameOver();
     }
 
     drawGameOver() {
-        this.ctx.fillStyle = 'rgba(0,0,0,0.85)';
-        this.ctx.fillRect(0, 0, this.GAME_WIDTH, this.GAME_HEIGHT);
-        this.ctx.fillStyle = '#d4af37';
-        this.ctx.textAlign = 'center';
-        this.ctx.font = '40px Cinzel';
-        this.ctx.fillText('DOOMED', this.GAME_WIDTH / 2, this.GAME_HEIGHT / 2 - 20);
-        this.ctx.fillStyle = '#fff';
-        this.ctx.font = '20px Inter';
-        this.ctx.fillText(`Distance: ${Math.floor(this.distanceTravelled)}m`, this.GAME_WIDTH / 2, this.GAME_HEIGHT / 2 + 30);
-        this.ctx.fillText('Tap to Reincarnate', this.GAME_WIDTH / 2, this.GAME_HEIGHT / 2 + 70);
-        this.ctx.textAlign = 'start';
+        // Handled by DOM overlay in script.js now
     }
 
     endGame() {
         this.isRunning = false;
         this.isGameOver = true;
+
+        // Check High Score
+        const currentScore = Math.floor(this.distanceTravelled);
+        if (currentScore > this.highScore) {
+            this.highScore = currentScore;
+            // Trigger callback to save
+            if (this.onGameEndCallback) {
+                this.onGameEndCallback(this.distanceTravelled);
+            }
+        }
+
         this.draw();
     }
 }
@@ -171,8 +229,8 @@ export class Game {
 class Ninja {
     constructor(game) {
         this.game = game;
-        this.width = 50;
-        this.height = 50;
+        this.width = 65; // resized
+        this.height = 65; // resized
         this.reset();
     }
 
@@ -245,14 +303,32 @@ class World {
             let ob = this.obstacles[i];
             ob.y += this.game.currentSpeed * dt * 100;
 
-            if (ob.y > this.game.GAME_HEIGHT) this.obstacles.splice(i, 1);
-            if (this.checkCollision(this.game.ninja, ob)) this.handleCollision(ob, i);
+            if (ob.y > this.game.GAME_HEIGHT) {
+                this.obstacles.splice(i, 1);
+            } else if (this.checkCollision(this.game.ninja, ob)) {
+                this.handleCollision(ob, i);
+            }
         }
     }
 
     spawnSequence() {
         const time = this.game.timeSurvived;
         const width = this.game.GAME_WIDTH;
+        const phase = this.game.phase;
+
+        if (phase === 'ICE_HELL') {
+            // Reverted to INTENSE-like logic but slightly harder (less "chaos")
+            const r = Math.random();
+            if (r < 0.25) this.spawnEnemy();
+            else if (r < 0.7) this.spawnMiddleBlade(Math.random() * (width - 60) + 30);
+            else this.spawnWallBlade(Math.random() < 0.5 ? 'left' : 'right');
+
+            // Reduced double probability significantly (hardly ever)
+            if (Math.random() < 0.05) this.spawnWallBlade(Math.random() < 0.5 ? 'left' : 'right');
+
+            if (Math.random() < 0.08) this.spawnPowerUp(Math.random() < 0.5 ? 'shield' : 'time');
+            return;
+        }
 
         if (time <= 7) {
             if (Math.random() < 0.6) this.spawnWallBlade(Math.random() < 0.5 ? 'left' : 'right');
@@ -263,35 +339,42 @@ class World {
             this.spawnMiddleBlade(Math.random() * (width - 100) + 50);
         } else if (time <= 30) {
             Math.random() < 0.2 ? this.spawnEnemy() : this.spawnMiddleBlade(Math.random() * (width - 100) + 50);
-            if (Math.random() < 0.05) this.spawnPowerUp(Math.random() < 0.5 ? 'shield' : 'time');
+            if (Math.random() < 0.05) this.spawnPowerUp('shield');
         } else {
             const r = Math.random();
             if (r < 0.25) this.spawnEnemy();
             else if (r < 0.7) this.spawnMiddleBlade(Math.random() * (width - 60) + 30);
             else this.spawnWallBlade(Math.random() < 0.5 ? 'left' : 'right');
-            if (Math.random() < 0.03) this.spawnPowerUp(Math.random() < 0.5 ? 'shield' : 'time');
+            if (Math.random() < 0.08) this.spawnPowerUp(Math.random() < 0.5 ? 'shield' : 'time');
         }
     }
 
     spawnWallBlade(side) {
-        this.obstacles.push({ type: 'blade', x: side === 'left' ? 0 : this.game.GAME_WIDTH - 40, y: -50, width: 40, height: 40 });
+        this.obstacles.push({ type: 'blade', x: side === 'left' ? 0 : this.game.GAME_WIDTH - 48, y: -48, width: 48, height: 48 });
     }
     spawnMiddleBlade(x) {
-        this.obstacles.push({ type: 'blade', x: x - 20, y: -50, width: 40, height: 40 });
+        this.obstacles.push({ type: 'blade', x: x - 24, y: -48, width: 48, height: 48 });
     }
     spawnEnemy() {
         const side = Math.random() < 0.5 ? 'left' : 'right';
-        this.obstacles.push({ type: 'enemy', x: side === 'left' ? 0 : this.game.GAME_WIDTH - 50, y: -60, width: 50, height: 50, damage: true });
+        this.obstacles.push({ type: 'enemy', x: side === 'left' ? 0 : this.game.GAME_WIDTH - 65, y: -70, width: 65, height: 65, damage: true });
     }
     spawnPowerUp(kind) {
         const side = Math.random() < 0.5 ? 'left' : 'right';
-        const w = 30;
+        const w = 40;
         this.obstacles.push({ type: 'powerup', kind: kind, x: side === 'left' ? 5 : this.game.GAME_WIDTH - 5 - w, y: -50, width: w, height: w });
     }
 
     checkCollision(ninja, ob) {
-        return (ninja.x < ob.x + ob.width && ninja.x + ninja.width > ob.x &&
-            ninja.y < ob.y + ob.height && ninja.y + ninja.height > ob.y);
+        if (!ninja) { console.error("checkCollision: ninja is undefined"); return false; }
+        if (!ob) { console.error("checkCollision: ob is undefined"); return false; }
+        try {
+            return (ninja.x < ob.x + ob.width && ninja.x + ninja.width > ob.x &&
+                ninja.y < ob.y + ob.height && ninja.y + ninja.height > ob.y);
+        } catch (e) {
+            console.error("Error in checkCollision:", e, ninja, ob);
+            return false;
+        }
     }
 
     handleCollision(ob, index) {
