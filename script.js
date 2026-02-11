@@ -309,8 +309,11 @@ async function saveGameData(score) {
         const { error: updateError } = await supabase.from('profiles').update(updates).eq('id', currentUser.id);
         if (updateError) {
             console.error('Failed to save profile stats:', updateError);
+            alert("SAVE FAILED: " + updateError.message + "\nCheck console for details.");
         } else {
             console.log("Profile updated successfully");
+            // Optional: visual feedback
+            // alert("Score Saved!"); 
         }
 
         // 2. Insert Run Record

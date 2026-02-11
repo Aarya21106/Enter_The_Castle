@@ -253,6 +253,7 @@ class Ninja {
     }
 
     update(dt) {
+        this.prevX = this.x; // Track previous position for CCD
         const blend = 1 - Math.pow(0.001, dt * 4);
         this.x += (this.targetX - this.x) * blend;
         if (Math.abs(this.targetX - this.x) < 1) this.x = this.targetX;
@@ -375,8 +376,28 @@ class World {
         if (!ninja) { console.error("checkCollision: ninja is undefined"); return false; }
         if (!ob) { console.error("checkCollision: ob is undefined"); return false; }
         try {
-            return (ninja.x < ob.x + ob.width && ninja.x + ninja.width > ob.x &&
-                ninja.y < ob.y + ob.height && ninja.y + ninja.height > ob.y);
+            // Standard AABB
+            const collisionX = ninja.x < ob.x + ob.width && ninja.x + ninja.width > ob.x;
+            const collisionY = ninja.y < ob.y + ob.height && ninja.y + ninja.height > ob.y;
+
+            if (collisionX && collisionY) return true;
+
+            // Continuous Collision Detection (Horizontal Tunneling Fix)
+            // If the ninja moved horizontally through the obstacle THIS frame
+            if (ninja.prevX !== undefined && collisionY) {
+                const minX = Math.min(ninja.prevX, ninja.x);
+                const maxX = Math.max(ninja.prevX, ninja.x) + ninja.width;
+
+                const obstacleLeft = ob.x;
+                const obstacleRight = ob.x + ob.width;
+
+                // Check if the swept X range overlaps the obstacle X range
+                if (maxX > obstacleLeft && minX < obstacleRight) {
+                    return true;
+                }
+            }
+
+            return false;
         } catch (e) {
             console.error("Error in checkCollision:", e, ninja, ob);
             return false;
