@@ -356,6 +356,13 @@ async function shareResult() {
     ctx.textAlign = 'center';
     ctx.fillText('ENTER THE CASTLE', storedCanvas.width / 2, 100);
 
+    // Username
+    if (currentProfile && currentProfile.username) {
+        ctx.font = '24px Inter';
+        ctx.fillStyle = '#ccc';
+        ctx.fillText(currentProfile.username, storedCanvas.width / 2, 140);
+    }
+
     // Score
     ctx.font = '60px Inter';
     ctx.fillStyle = '#fff';
@@ -376,7 +383,8 @@ async function shareResult() {
     storedCanvas.toBlob(async (blob) => {
         const file = new File([blob], 'masoleum_record.png', { type: 'image/png' });
 
-        const text = `I survived ${Math.floor(activeGame.distanceTravelled)}m in Enter The Castle! #EnterTheCastle`;
+        const username = currentProfile?.username || 'A Knight';
+        const text = `${username} survived ${Math.floor(activeGame.distanceTravelled)}m in Enter The Castle! #EnterTheCastle`;
 
         if (navigator.share && navigator.canShare({ files: [file] })) {
             try {
