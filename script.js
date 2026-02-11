@@ -145,6 +145,13 @@ async function handleUserAuthenticated(user) {
         return;
     }
 
+    // Backfill Email if missing (and we have it)
+    if (profile && !profile.email && user.email) {
+        console.log("Backfilling email for user...");
+        await supabase.from('profiles').update({ email: user.email }).eq('id', user.id);
+        profile.email = user.email;
+    }
+
     if (!profile || !profile.username) {
         // New user or no username
         showScreen('username');
@@ -169,7 +176,12 @@ async function handleUsernameSubmit(e) {
     // Check Uniqueness (Optimistic: try update, catch violation)
     const { error } = await supabase
         .from('profiles')
-        .upsert({ id: currentUser.id, username: username, high_score: 0 });
+        .upsert({
+            id: currentUser.id,
+            username: username,
+            email: currentUser.email, // Save Email
+            high_score: 0
+        });
 
     if (error) {
         if (error.code === '23505') { // Unique violation
@@ -178,7 +190,7 @@ async function handleUsernameSubmit(e) {
             errorMsg.innerText = "Error carving name: " + error.message;
         }
     } else {
-        currentProfile = { id: currentUser.id, username, high_score: 0 };
+        currentProfile = { id: currentUser.id, username, email: currentUser.email, high_score: 0 };
         loadEntryScreen();
     }
 }
