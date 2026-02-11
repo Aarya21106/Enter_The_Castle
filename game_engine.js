@@ -131,21 +131,21 @@ export class Game {
         if (d > 5000) {
             this.phase = 'ABYSS';
             this.speedTimer += dt;
-            if (this.speedTimer >= 5.0) {
+            // Tremendous speed increase after 5000
+            if (this.speedTimer >= 2.0) { // Every 2 seconds
                 this.speedTimer = 0;
-                this.currentSpeed += 0.5;
-                if (this.currentSpeed > 20.0) this.currentSpeed = 20.0;
+                this.currentSpeed += 0.8; // Huge jumps
+                if (this.currentSpeed > 25.0) this.currentSpeed = 25.0; // Higher cap
             }
         } else if (d > this.ICE_PHASE_DIST) {
             this.phase = 'ICE_HELL';
 
-            // Speed increase. More gradual now, similar to normal phase but continuous.
-            // 0.2 every 5s instead of 0.5.
+            // Speed increase.
             this.speedTimer += dt;
-            if (this.speedTimer >= 5.0) {
+            if (this.speedTimer >= 4.0) { // Slightly faster rate than before
                 this.speedTimer = 0;
-                this.currentSpeed += 0.2;
-                if (this.currentSpeed > 13.0) this.currentSpeed = 13.0; // cap
+                this.currentSpeed += 0.4;
+                if (this.currentSpeed > 16.0) this.currentSpeed = 16.0;
             }
         } else {
             this.speedTimer = 0;
@@ -289,9 +289,13 @@ class World {
         // ... Spawn Logic
         if (this.spawnTimer <= 0) {
             this.spawnSequence();
+
             // Constant Distance Spacing Logic
             let spacing = 1.0;
             if (this.game.phase === 'TRIAL') spacing = 2.0;
+
+            // User requested "distance between obstacles reduced" in Ice Phase -> lower spacing
+            if (this.game.phase === 'ICE_HELL' || this.game.phase === 'ABYSS') spacing = 0.8;
 
             let speedRatio = this.game.currentSpeed / this.game.BASE_SPEED;
             if (speedRatio < 0.1) speedRatio = 0.1; // Safety
@@ -316,15 +320,17 @@ class World {
         const width = this.game.GAME_WIDTH;
         const phase = this.game.phase;
 
-        if (phase === 'ICE_HELL') {
-            // Reverted to INTENSE-like logic but slightly harder (less "chaos")
+        if (phase === 'ICE_HELL' || phase === 'ABYSS') {
             const r = Math.random();
-            if (r < 0.25) this.spawnEnemy();
+
+            // STRICTLY Avoid unavoidable obstacles (no concurrent wall spawns, no overlaps)
+            // Just single intense obstacles
+
+            if (r < 0.3) this.spawnEnemy();
             else if (r < 0.7) this.spawnMiddleBlade(Math.random() * (width - 60) + 30);
             else this.spawnWallBlade(Math.random() < 0.5 ? 'left' : 'right');
 
-            // Reduced double probability significantly (hardly ever)
-            if (Math.random() < 0.05) this.spawnWallBlade(Math.random() < 0.5 ? 'left' : 'right');
+            // NO double trouble logic here to prevent "unavoidable" traps
 
             if (Math.random() < 0.08) this.spawnPowerUp(Math.random() < 0.5 ? 'shield' : 'time');
             return;
@@ -350,10 +356,10 @@ class World {
     }
 
     spawnWallBlade(side) {
-        this.obstacles.push({ type: 'blade', x: side === 'left' ? 0 : this.game.GAME_WIDTH - 48, y: -48, width: 48, height: 48 });
+        this.obstacles.push({ type: 'blade', x: side === 'left' ? 0 : this.game.GAME_WIDTH - 46, y: -46, width: 46, height: 46 });
     }
     spawnMiddleBlade(x) {
-        this.obstacles.push({ type: 'blade', x: x - 24, y: -48, width: 48, height: 48 });
+        this.obstacles.push({ type: 'blade', x: x - 23, y: -46, width: 46, height: 46 });
     }
     spawnEnemy() {
         const side = Math.random() < 0.5 ? 'left' : 'right';

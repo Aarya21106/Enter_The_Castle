@@ -142,8 +142,58 @@ input:focus {
 
 .input-group {
     position: relative;
-    margin-bottom: 1.2rem;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
 }
+
+/* Inline Instructions */
+.instructions-panel {
+    position: relative;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid var(--accent-gold);
+    border-radius: 12px;
+    padding: 10px;
+    margin-top: 10px;
+    max-width: 95%;
+    width: 340px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    /* Let taps pass through if needed, though high z-index usually blocks */
+}
+
+.instruction-row {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.inst-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 60px;
+}
+
+.inst-item img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    margin-bottom: 4px;
+}
+
+.inst-item span {
+    font-size: 0.7rem;
+    color: #ccc;
+    text-align: center;
+    line-height: 1;
+}
+
+/* Rules Modal - Removed */
 
 label {
     position: absolute;
@@ -272,7 +322,9 @@ h1 {
     text-align: center;
     animation: pulse 2s infinite;
     cursor: pointer;
-    padding: 4rem;
+    padding: 2rem;
+    margin-bottom: 1rem;
+    z-index: 60;
     /* Big touch validation area */
 }
 
@@ -470,11 +522,13 @@ td:nth-child(2) {
     color: #fff;
 }
 
-th:last-child,
-td:last-child {
+th:nth-child(3),
+td:nth-child(3) {
     text-align: right;
     width: 100px;
-    color: var(--text-secondary);
+    color: #fff;
+    /* Force white for visibility */
+    font-weight: bold;
 }
 
 /* --- Game Interface --- */

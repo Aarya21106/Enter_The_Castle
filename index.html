@@ -9,10 +9,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=3.3">
     <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#000000" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="assets/element_0.png">
     <script>
@@ -111,6 +111,19 @@
             <p>Survive the trial.</p>
         </div>
 
+        <!-- Inline Instructions -->
+        <div class="instructions-panel">
+            <div class="instruction-row">
+                <div class="inst-item"><img src="assets/IMG_1226.PNG"><span>You</span></div>
+                <div class="inst-item"><img src="assets/element_3.png"><span>Enemy (Avoid)</span></div>
+                <div class="inst-item"><img src="assets/element_4old.png"><span>Blade (Jump)</span></div>
+            </div>
+            <div class="instruction-row">
+                <div class="inst-item"><img src="assets/element_1.png"><span>Shield</span></div>
+                <div class="inst-item"><img src="assets/element_0.png"><span>Time Slow</span></div>
+            </div>
+        </div>
+
         <button id="open-leaderboard-btn" class="icon-btn top-right">
             🏆
         </button>
@@ -183,7 +196,8 @@
         </div>
     </div>
 
-    <script type="module" src="script.js?v=3.0"></script>
+
+    <script type="module" src="script.js?v=3.9"></script>
 </body>
 
 </html>

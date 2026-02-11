@@ -214,15 +214,19 @@ async function showLeaderboard() {
     const tbody = document.querySelector('#full-leaderboard-table tbody');
     tbody.innerHTML = '<tr><td colspan="3">Loading...</td></tr>';
 
-    const { data: knights } = await supabase
+    const { data: knights, error } = await supabase
         .from('profiles')
         .select('username, high_score')
         .order('high_score', { ascending: false })
         .limit(50);
 
+    if (error) console.error("Leaderboard Fetch Error:", error);
+    console.log("Leaderboard Data:", knights);
+
     tbody.innerHTML = '';
     if (knights) {
         knights.forEach((k, i) => {
+            console.log(`Rank #${i + 1}: ${k.username} - ${k.high_score}`);
             const row = `<tr>
                 <td>#${i + 1}</td>
                 <td>${k.username} ${currentProfile?.username === k.username ? '(You)' : ''}</td>
@@ -249,6 +253,7 @@ function startGame() {
 
 async function handleGameEnd(score) {
     const finalScore = Math.floor(score);
+    console.log("Game Ended. Final Score:", finalScore, "Current Best:", currentProfile.high_score);
     const isNewBest = finalScore > currentProfile.high_score;
 
     // Update Local State
@@ -277,29 +282,49 @@ async function handleGameEnd(score) {
 async function saveGameData(score) {
     const time = activeGame.timeSurvived;
 
-    // 1. Update Profile Stats (Total Distance, Games Played, High Score)
-    const { data: profile } = await supabase.from('profiles').select('games_played, total_distance, high_score').eq('id', currentUser.id).single();
+    try {
+        // 1. Update Profile Stats
+        const { data: profile, error: fetchError } = await supabase.from('profiles').select('games_played, total_distance, high_score').eq('id', currentUser.id).single();
 
-    const newGamesPlayed = (profile?.games_played || 0) + 1;
-    const newTotalDist = (profile?.total_distance || 0) + score;
-    const updates = {
-        games_played: newGamesPlayed,
-        total_distance: newTotalDist,
-        updated_at: new Date()
-    };
+        if (fetchError) {
+            console.error("Fetch profile failed:", fetchError);
+            // Don't stop, try to update anyway if possible, or just default to 0
+        }
 
-    if (score > (profile?.high_score || 0)) {
-        updates.high_score = score;
+        const newGamesPlayed = (parseInt(profile?.games_played) || 0) + 1;
+        const newTotalDist = (parseFloat(profile?.total_distance) || 0.0) + score;
+
+        const updates = {
+            games_played: newGamesPlayed,
+            total_distance: newTotalDist
+        };
+
+        if (score > (parseInt(profile?.high_score) || 0)) {
+            updates.high_score = score;
+            console.log("New High Score Detected:", score);
+        }
+
+        console.log("Sending Profile Update:", updates);
+
+        const { error: updateError } = await supabase.from('profiles').update(updates).eq('id', currentUser.id);
+        if (updateError) {
+            console.error('Failed to save profile stats:', updateError);
+        } else {
+            console.log("Profile updated successfully");
+        }
+
+        // 2. Insert Run Record
+        const { error: runError } = await supabase.from('game_runs').insert({
+            user_id: currentUser.id,
+            distance: score,
+            time_survived: time
+        });
+        if (runError) console.error("Run save error:", runError);
+
+    } catch (err) {
+        console.error("Unexpected Save Error:", err);
+        alert("Unexpected Save Error: " + err.message);
     }
-
-    await supabase.from('profiles').update(updates).eq('id', currentUser.id);
-
-    // 2. Insert Run Record
-    await supabase.from('game_runs').insert({
-        user_id: currentUser.id,
-        distance: score,
-        time_survived: time
-    });
 }
 
 // --- Social Sharing ---
